@@ -1,3 +1,5 @@
+package name.sccu
+
 import java.io.InputStream
 
 import scala.annotation.tailrec
