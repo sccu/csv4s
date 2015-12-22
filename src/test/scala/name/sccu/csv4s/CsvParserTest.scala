@@ -1,4 +1,4 @@
-package name.sccu
+package name.sccu.csv4s
 
 import scala.io.Source
 

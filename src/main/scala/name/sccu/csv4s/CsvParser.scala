@@ -1,12 +1,10 @@
-package name.sccu
+package name.sccu.csv4s
 
 import java.io.InputStream
 
 import scala.annotation.tailrec
-import scala.io._
-import scala.util.parsing.combinator._
-
-
+import scala.io.Source
+import scala.util.parsing.combinator.RegexParsers
 
 class CsvParser(headerOption: Option[List[String]], lines: Iterator[String]) extends Iterator[List[String]] {
 
@@ -69,10 +67,4 @@ object CsvParser extends RegexParsers {
 
   private def record = fieldList
 
-}
-
-package object csv4s {
-  def main(args: Array[String]) {
-    CsvParser(Source.stdin).map(_.mkString("\t")).foreach(println)
-  }
 }
