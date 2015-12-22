@@ -8,26 +8,42 @@ import scala.util.parsing.combinator._
 
 
 
-class CsvParser(lines: Iterator[String]) extends Iterator[List[String]] with RegexParsers {
-
-  private val MAX_LINE_COUNT = 100
-
-  private def SEPARATOR = ",".r
-
-  private def field: Parser[String] = s"""(?s)("(""|[^\"])*")|([^\"\r\n$SEPARATOR]*)""".r
-
-  private def fieldList: Parser[List[String]] = field ~ rep(SEPARATOR ~> field) ^^ {
-    case f ~ l => f +: l
-  }
-
-  private def record = fieldList
+class CsvParser(headerOption: Option[List[String]], lines: Iterator[String]) extends Iterator[List[String]] {
 
   def next(): List[String] = {
-    val row = nextRow(lines)
-    val result = parseAll(record, row)
+    val row = CsvParser.nextRow(lines)
+    val result = CsvParser.parseAll(CsvParser.record, row)
     val fields = result.get
     fields.map(removeEnclosingDoubleQuote)
   }
+
+
+  private def removeEnclosingDoubleQuote(text: String): String = {
+    val enclosingText = """"(?s)(.*)"""".r
+    text match {
+      case enclosingText(str) => str.replace("\"\"", "\"")
+      case _ => text
+    }
+  }
+
+  override def hasNext: Boolean = lines.hasNext
+}
+
+object CsvParser extends RegexParsers {
+  def apply(src: Source, noHeader: Boolean = false): CsvParser = {
+    val lines = src.getLines()
+    if (noHeader) {
+      new CsvParser(None, src.getLines())
+    } else {
+      val headerOption = CsvParser.parseAll(record, CsvParser.nextRow(lines))
+      val header = headerOption.get
+      new CsvParser(Some(header), src.getLines())
+    }
+  }
+
+  def apply(inputStream: InputStream): CsvParser = apply(Source.fromInputStream(inputStream))
+
+  private val MAX_LINE_COUNT = 100
 
   private def nextRow(lines: Iterator[String]) = {
     @tailrec
@@ -43,20 +59,16 @@ class CsvParser(lines: Iterator[String]) extends Iterator[List[String]] with Reg
     findRow(line, MAX_LINE_COUNT)
   }
 
-  private def removeEnclosingDoubleQuote(text: String): String = {
-    val enclosingText = """"(?s)(.*)"""".r
-    text match {
-      case enclosingText(str) => str.replace("\"\"", "\"")
-      case _ => text
-    }
+  private def SEPARATOR = ",".r
+
+  private def field: Parser[String] = s"""(?s)("(""|[^\"])*")|([^\"\r\n$SEPARATOR]*)""".r
+
+  private def fieldList: Parser[List[String]] = field ~ rep(SEPARATOR ~> field) ^^ {
+    case f ~ l => f +: l
   }
 
-  override def hasNext: Boolean = lines.hasNext
-}
+  private def record = fieldList
 
-object CsvParser {
-  def apply(src: Source): CsvParser = new CsvParser(src.getLines())
-  def apply(inputStream: InputStream): CsvParser = apply(Source.fromInputStream(inputStream))
 }
 
 package object csv4s {
