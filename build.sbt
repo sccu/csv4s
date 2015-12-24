@@ -2,7 +2,7 @@ organization := "name.sccu"
 
 name := "csv4s"
 
-version := "0.1.3-SNAPSHOT"
+version := "0.1.5"
 
 scalaVersion := "2.11.2"
 
