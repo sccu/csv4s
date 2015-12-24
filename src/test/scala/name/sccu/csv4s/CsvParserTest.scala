@@ -68,4 +68,12 @@ class CsvParserTest extends org.scalatest.FlatSpec {
     assert(parser.next.size == 1)
   }
 
+  it should "access to a header list." in {
+    val src = Source.fromString("col1,col2,col3\n1,2,3")
+    val parser: CsvParser = CsvParser(src)
+    assert(parser.headerOption.get(0) == "col1")
+    assert(parser.headerOption.get(1) == "col2")
+    assert(parser.headerOption.get(2) == "col3")
+  }
+
 }

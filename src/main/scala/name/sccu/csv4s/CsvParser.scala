@@ -6,15 +6,16 @@ import scala.annotation.tailrec
 import scala.io.Source
 import scala.util.parsing.combinator.RegexParsers
 
-class CsvParser(headerOption: Option[List[String]], lines: Iterator[String]) extends Iterator[List[String]] {
+class CsvParser(val headerOption: Option[List[String]], lines: Iterator[String]) extends Iterator[List[String]] {
 
-  def next(): List[String] = {
+  override def hasNext: Boolean = lines.hasNext
+
+  override def next(): List[String] = {
     val row = CsvParser.nextRow(lines)
     val result = CsvParser.parseAll(CsvParser.record, row)
     val fields = result.get
     fields.map(removeEnclosingDoubleQuote)
   }
-
 
   private def removeEnclosingDoubleQuote(text: String): String = {
     val enclosingText = """"(?s)(.*)"""".r
@@ -24,7 +25,6 @@ class CsvParser(headerOption: Option[List[String]], lines: Iterator[String]) ext
     }
   }
 
-  override def hasNext: Boolean = lines.hasNext
 }
 
 object CsvParser extends RegexParsers {
@@ -61,7 +61,7 @@ object CsvParser extends RegexParsers {
 
   private def field: Parser[String] = s"""(?s)("(""|[^\"])*")|([^\"\r\n$SEPARATOR]*)""".r
 
-  private def fieldList: Parser[List[String]] = field ~ rep(SEPARATOR ~> field) ^^ {
+  private def fieldList: Parser[List[String]] = field ~! rep(SEPARATOR ~> field) ^^ {
     case f ~ l => f +: l
   }
 
