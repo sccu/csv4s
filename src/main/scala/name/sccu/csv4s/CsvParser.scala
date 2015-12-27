@@ -1,16 +1,16 @@
 package name.sccu.csv4s
 
-import java.io.InputStream
+import java.io.{BufferedInputStream, InputStream}
 
 import scala.annotation.tailrec
 import scala.io.Source
 import scala.util.parsing.combinator.RegexParsers
 
-class CsvParser(val headerOption: Option[List[String]], lines: Iterator[String]) extends Iterator[List[String]] {
+class CsvParser(val headerOption: Option[Seq[String]], lines: Iterator[String]) extends Iterator[Seq[String]] {
 
   override def hasNext: Boolean = lines.hasNext
 
-  override def next(): List[String] = {
+  override def next(): Seq[String] = {
     val row = CsvParser.nextRow(lines)
     val result = CsvParser.parseAll(CsvParser.record, row)
     val fields = result.get
@@ -39,7 +39,20 @@ object CsvParser extends RegexParsers {
     }
   }
 
-  def apply(inputStream: InputStream): CsvParser = apply(Source.fromInputStream(inputStream))
+  def apply(is: InputStream, encoding: String): CsvParser = {
+    val bis = if (is.markSupported()) is else new BufferedInputStream(is)
+
+    bis.mark(8)
+    if (bis.read() != 0xEF || bis.read() != 0xBB || bis.read() != 0xBF) {
+      bis.reset()
+    }
+
+    apply(Source.fromInputStream(bis, encoding))
+  }
+
+  def apply(inputStream: InputStream): CsvParser = {
+    apply(Source.fromInputStream(inputStream, "UTF-8"))
+  }
 
   private val MAX_LINE_COUNT = 100
 
@@ -61,7 +74,7 @@ object CsvParser extends RegexParsers {
 
   private def field: Parser[String] = s"""(?s)("(""|[^\"])*")|([^\"\r\n$SEPARATOR]*)""".r
 
-  private def fieldList: Parser[List[String]] = field ~! rep(SEPARATOR ~> field) ^^ {
+  private def fieldList: Parser[Seq[String]] = field ~! rep(SEPARATOR ~> field) ^^ {
     case f ~ l => f +: l
   }
 

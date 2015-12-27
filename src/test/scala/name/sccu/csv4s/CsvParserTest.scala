@@ -1,5 +1,9 @@
 package name.sccu.csv4s
 
+import java.io.FileInputStream
+
+import org.scalatest.Ignore
+
 import scala.io.Source
 
 class CsvParserTest extends org.scalatest.FlatSpec {
@@ -76,4 +80,10 @@ class CsvParserTest extends org.scalatest.FlatSpec {
     assert(parser.headerOption.get(2) == "col3")
   }
 
+  ignore should "parse a sample file." in {
+    val path = "/Users/sccu/Downloads/pois_by_themes/관광음식업정보_관광식당(수시).csv"
+    val parser: CsvParser = CsvParser(new FileInputStream(path), "UTF-8")
+    val header = parser.headerOption.get
+    parser.map(t => (header zip t).map(col => s"${col._1}:${col._2}")).take(5).foreach(println)
+  }
 }
