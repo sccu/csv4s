@@ -8,7 +8,7 @@ import scala.io.Source
 
 class CsvParserTest extends org.scalatest.FlatSpec {
 
-  "CsvParser" should "parse trivial csv string." in {
+  "CsvParser" should "parse naive csv string." in {
     val csv = Source.fromString("a,b,c")
     val cols = CsvParser(csv, noHeader = true).next()
     assert(cols.size == 3)

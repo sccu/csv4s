@@ -6,37 +6,28 @@ import scala.annotation.tailrec
 import scala.io.Source
 import scala.util.parsing.combinator.RegexParsers
 
-class CsvParser(val headerOption: Option[Seq[String]], lines: Iterator[String]) extends Iterator[Seq[String]] {
+class CsvParser(val headerOption: Option[Seq[String]], lines: Iterator[String])
+  extends Iterator[Seq[String]] {
 
   override def hasNext: Boolean = lines.hasNext
 
   override def next(): Seq[String] = {
-    val row = CsvParser.nextRow(lines)
-    val result = CsvParser.parseAll(CsvParser.record, row)
-    val fields = result.get
-    fields.map(removeEnclosingDoubleQuote)
+    val recordString = CsvParser.nextRow(lines)
+    val result = CsvParser.parseAll(CsvParser.record, recordString)
+    result.get
   }
-
-  private def removeEnclosingDoubleQuote(text: String): String = {
-    val enclosingText = """"(?s)(.*)"""".r
-    text match {
-      case enclosingText(str) => str.replace("\"\"", "\"")
-      case _ => text
-    }
-  }
-
 }
 
 object CsvParser extends RegexParsers {
   def apply(src: Source, noHeader: Boolean = false): CsvParser = {
-    val lines = src.getLines()
-    if (noHeader) {
-      new CsvParser(None, src.getLines())
+    val headerOption = if (noHeader) {
+      None
     } else {
-      val headerOption = CsvParser.parseAll(record, CsvParser.nextRow(lines))
-      val header = headerOption.get
-      new CsvParser(Some(header), src.getLines())
+      val lines = src.getLines()
+      val header = CsvParser.parseAll(record, CsvParser.nextRow(lines)).get
+      Some(header)
     }
+    new CsvParser(headerOption, src.getLines())
   }
 
   def apply(is: InputStream, encoding: String): CsvParser = {
@@ -70,14 +61,17 @@ object CsvParser extends RegexParsers {
     findRow(line, MAX_LINE_COUNT)
   }
 
-  private def SEPARATOR = ",".r
-
-  private def field: Parser[String] = s"""(?s)("(""|[^\"])*")|([^\"\r\n$SEPARATOR]*)""".r
-
-  private def fieldList: Parser[Seq[String]] = field ~! rep(SEPARATOR ~> field) ^^ {
+  private def record: Parser[Seq[String]] = field ~! rep(SEPARATOR ~> field) ^^ {
     case f ~ l => f +: l
   }
 
-  private def record = fieldList
+  private def field: Parser[String] = escaped | non_escaped
 
+  private def escaped: Parser[String] = s"""(?s)"(""|[^\"])*"""".r ^^ {
+    _.tail.init.replace("\"\"", "\"")
+  }
+
+  private def non_escaped: Parser[String] = s"""[^\"\r\n$SEPARATOR]*""".r
+
+  private def SEPARATOR = ",".r
 }
