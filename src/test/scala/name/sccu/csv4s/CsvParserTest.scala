@@ -1,8 +1,7 @@
 package name.sccu.csv4s
 
 import java.io.FileInputStream
-
-import org.scalatest.Ignore
+import java.text.ParseException
 
 import scala.io.Source
 
@@ -85,5 +84,13 @@ class CsvParserTest extends org.scalatest.FlatSpec {
     val parser: CsvParser = CsvParser(new FileInputStream(path), "UTF-8")
     val header = parser.headerOption.get
     parser.map(t => (header zip t).map(col => s"${col._1}:${col._2}")).take(5).foreach(println)
+  }
+
+  it should "not parse a wrong csv." in {
+    val src = Source.fromString("a,b\"\"b,c")
+    val parser: CsvParser = CsvParser(src, noHeader = true)
+    intercept[ParseException] {
+      parser.next
+    }
   }
 }
