@@ -5,7 +5,7 @@ import java.text.ParseException
 
 import scala.annotation.tailrec
 import scala.io.Source
-import scala.util.parsing.combinator.{PackratParsers, RegexParsers}
+import scala.util.parsing.combinator.RegexParsers
 
 class CsvParser(val headerOption: Option[Seq[String]], lines: Iterator[String])
   extends Iterator[Seq[String]] {
@@ -20,7 +20,7 @@ class CsvParser(val headerOption: Option[Seq[String]], lines: Iterator[String])
   }
 }
 
-object CsvParser extends RegexParsers with PackratParsers {
+object CsvParser extends RegexParsers {
   def apply(src: Source, noHeader: Boolean = false): CsvParser = {
     val headerOption = if (noHeader) {
       None
@@ -63,17 +63,18 @@ object CsvParser extends RegexParsers with PackratParsers {
     findRow(line, MAX_LINE_COUNT)
   }
 
-  private lazy val record: PackratParser[Seq[String]] = field ~! rep(SEPARATOR ~> field) ^^ {
+  private def record: Parser[Seq[String]] = field ~! rep(SEPARATOR ~> field) ^^ {
     case f ~ l => f +: l
   }
 
-  private lazy val field: PackratParser[String] = escaped | non_escaped
+  private def field: Parser[String] = escaped | non_escaped
 
-  private lazy val escaped: PackratParser[String] = s"""(?s)"(""|[^\"])*"""".r ^^ {
-    _.tail.init.replace("\"\"", "\"")
-  }
+  private def escaped: Parser[String] =
+    s"""(?s)"(""|[^\"])*"""".r ^^ {
+      _.tail.init.replace("\"\"", "\"")
+    }
 
-  private lazy val non_escaped: PackratParser[String] = parser2packrat(s"""[^\"\r\n$SEPARATOR]*""".r)
+  private def non_escaped: Parser[String] = s"""[^\"\r\n$SEPARATOR]*""".r
 
   private def SEPARATOR = ",".r
 }
