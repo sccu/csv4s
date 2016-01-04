@@ -21,7 +21,10 @@ class CsvParser(val headerOption: Option[Seq[String]], lines: Iterator[String])
 }
 
 object CsvParser extends RegexParsers {
-  def apply(src: Source, noHeader: Boolean = false): CsvParser = {
+  override val skipWhitespace = false
+
+  def apply(src: Source, noHeader: Boolean = false, sep: String = ","): CsvParser = {
+    separator = sep
     val headerOption = if (noHeader) {
       None
     } else {
@@ -63,9 +66,7 @@ object CsvParser extends RegexParsers {
     findRow(line, MAX_LINE_COUNT)
   }
 
-  private def record: Parser[Seq[String]] = field ~! rep(SEPARATOR ~> field) ^^ {
-    case f ~ l => f +: l
-  }
+  private def record: Parser[Seq[String]] = repsep(field, separator)
 
   private def field: Parser[String] = escaped | non_escaped
 
@@ -74,7 +75,7 @@ object CsvParser extends RegexParsers {
       _.tail.init.replace("\"\"", "\"")
     }
 
-  private def non_escaped: Parser[String] = s"""[^\"\r\n$SEPARATOR]*""".r
+  private def non_escaped: Parser[String] = s"""[^\"\r\n$separator]*""".r
 
-  private def SEPARATOR = ",".r
+  private var separator = ","
 }

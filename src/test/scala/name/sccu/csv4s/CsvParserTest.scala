@@ -6,8 +6,21 @@ import java.text.ParseException
 import scala.io.Source
 
 class CsvParserTest extends org.scalatest.FlatSpec {
+  it should "parse a tsv." in {
+    val src = Source.fromString("tsv1\ttsv2\ttsv3")
+    val parser: CsvParser = CsvParser(src, noHeader = true, sep = "\t")
+    val cols = parser.next()
+    assert(cols.size == 3)
+  }
 
-  "CsvParser" should "parse naive csv string." in {
+  it should "parse csv-like format using any custom separator." in {
+    val src = Source.fromString("a|b|c")
+    val parser: CsvParser = CsvParser(src, noHeader = true, sep = "|")
+    val cols = parser.next()
+    assert(cols.size == 3)
+  }
+
+  it should "parse naive csv string." in {
     val csv = Source.fromString("a,b,c")
     val cols = CsvParser(csv, noHeader = true).next()
     assert(cols.size == 3)
@@ -93,4 +106,5 @@ class CsvParserTest extends org.scalatest.FlatSpec {
       parser.next
     }
   }
+
 }
